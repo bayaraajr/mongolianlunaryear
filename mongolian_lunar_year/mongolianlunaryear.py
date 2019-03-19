@@ -19,7 +19,7 @@ CNST = {
 	"a2":1/28 //+1/105840
 }
 CAL_TYPE = 2
-def get(year=datetime.today() , to = datetime.today() + relativedelta(years=1)):
+def get(year=datetime.today() , to = datetime.today()):
     '''
     Parameters
     ----------
@@ -36,12 +36,18 @@ def get(year=datetime.today() , to = datetime.today() + relativedelta(years=1)):
         print(y)
         julian = new_year_jd(y)
         g = jd2g(julian)
-        lunar_years_first_days.append(g)
+        tmp = datetime(g["year"] , g["month"] , g["day"] , 0 ,0)
+        lunar_years_first_days.append(tmp)
 
     return lunar_years_first_days
 
 def new_year_jd(year):
-    return julian_day(year - 1  , 12 , 0 , 30) + 1
+    if CAL_TYPE <= 2:
+        return julian_day(year - 1  , 12 , 0 , 30) + 1
+    else:
+        dat = {}
+        prev_month(year , 1 , 0 , dat)
+        return julian_day(dat["y"] , dat["m"] , dat["l"] , 30 ) + 1
 
 def julian_day(y , m ,  l , d):
     n = true_month(y , m, l)
@@ -71,20 +77,17 @@ def true_month(y , m , l):
         return pp
     return pp + 1
 
-
-    pass
 def true_date(d , n):
     mean_date = n * CNST["m1"] + d*CNST["m2"] + CNST["m0"]
     mean_sun = n * CNST["s1"] + d*CNST["s2"] + CNST["s0"]
     anomaly_moon = n * CNST["a1"] + d*CNST["a2"] + CNST["a0"] 
-
     moon_equ = moon_tab(28*anomaly_moon)
     anomaly_sun = mean_sun - .25
     sun_equ = sun_tab(12*anomaly_sun)
     t = mean_date + moon_equ/60 - sun_equ/60
     return t
 def mstar(y , m):
-    return 12 * (y - EPOCH) + m + MZERO
+    return 12 * (y - EPOCH) + m - MZERO
 
 def moon_tab(i):
     i = i % 28
@@ -99,8 +102,9 @@ def moon_tab(i):
     a = math.floor(i)
     b = math.ceil(i)
 
-    v = [0 , 5 , 10 , 19 , 22 ,24 ,25]
+    v = [0 , 5 , 10 , 15 ,19 , 22 ,24 ,25]
 
+    print("%s" % a)
     if a == b:
         return s*v[a]
     return s*((b-i)*v[a] + (i-a)*v[b])/(b-a)
